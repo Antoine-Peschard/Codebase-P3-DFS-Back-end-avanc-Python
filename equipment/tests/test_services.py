@@ -1,7 +1,8 @@
 import pytest
 
 from equipment.models import Equipment
-from equipment.services import *
+from equipment.services import EquipmentService, EquipmentUnavailableError
+
 
 @pytest.fixture
 def service():
@@ -25,3 +26,36 @@ def test_borrow_available_equipment(service, equipment):
     assert equipment.borrower_last_name == "Peschard"
     assert equipment.borrowed_at is not None
     assert equipment.returned_at is None
+
+
+def test_borrow_unavailable_equipment_raises_error(service, equipment):
+    """Borrowing an already borrowed equipment raises an error and keeps the borrower"""
+    service.borrow_equipment(equipment.id, "Antoine", "Peschard")
+
+    with pytest.raises(EquipmentUnavailableError):
+        """Check and act: the borrowing should raise the exception"""
+        service.borrow_equipment(equipment.id, "Arthur", "Mardoc")
+
+    """Check: check if the first borrower's name has not been erased"""
+    equipment.refresh_from_db()
+    assert equipment.borrower_first_name == "Antoine"
+    assert equipment.borrower_last_name == "Peschard"
+
+
+def test_return_borrowed_equipment(service, equipment):
+    """A borrowed equipment can be returned and its borrower is cleared."""
+    service.borrow_equipment(equipment.id, "Antoine", "Peschard")
+    equipment.refresh_from_db()
+    borrowed_at = equipment.borrowed_at
+
+
+    service.return_equipment(equipment.id)
+
+
+    equipment.refresh_from_db()
+    assert equipment.is_available is True
+    assert equipment.borrower_first_name == ""
+    assert equipment.borrower_last_name == ""
+    assert equipment.borrowed_at == borrowed_at
+    assert equipment.returned_at is not None
+
