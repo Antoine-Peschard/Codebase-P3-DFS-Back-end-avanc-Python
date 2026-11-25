@@ -42,4 +42,16 @@ class EquipmentService:
 
     @transaction.atomic
     def return_equipment(self, equipment_id: int) -> Equipment:
-        raise NotImplementedError
+        equipment = self.find_equipment(equipment_id)
+
+        """Raise stock error if the equipment trying to be returned is already available"""
+        if equipment.is_available:
+            raise EquipmentAlreadyAvailableError
+
+        """Updates the equipment's parameters when returned"""
+        equipment.is_available = True
+        equipment.borrower_first_name = ""
+        equipment.borrower_last_name = ""
+        equipment.returned_at = timezone.now()
+        equipment.save()
+        return equipment
