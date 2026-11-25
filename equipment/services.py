@@ -27,7 +27,7 @@ class EquipmentService:
     def borrow_equipment(self, equipment_id: int, first_name: str, last_name: str) -> Equipment:
         equipment = self.find_equipment(equipment_id)
 
-        """Raise Unavailibity error if no equipment is available"""
+        """Raise Unavailability error if no equipment is available"""
         if not equipment.is_available:
             raise EquipmentUnavailableError
         
