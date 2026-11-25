@@ -1,7 +1,12 @@
 import pytest
 
 from equipment.models import Equipment
-from equipment.services import EquipmentService, EquipmentUnavailableError
+from equipment.services import (
+    EquipmentAlreadyAvailableError,
+    EquipmentNotFoundError,
+    EquipmentService,
+    EquipmentUnavailableError,
+)
 
 
 @pytest.fixture
@@ -48,9 +53,7 @@ def test_return_borrowed_equipment(service, equipment):
     equipment.refresh_from_db()
     borrowed_at = equipment.borrowed_at
 
-
     service.return_equipment(equipment.id)
-
 
     equipment.refresh_from_db()
     assert equipment.is_available is True
@@ -59,3 +62,26 @@ def test_return_borrowed_equipment(service, equipment):
     assert equipment.borrowed_at == borrowed_at
     assert equipment.returned_at is not None
 
+
+def test_return_already_returned_equipment(service, equipment):
+    """An already returned equipment cannot be returned and it should raise and error."""
+    with pytest.raises(EquipmentAlreadyAvailableError):
+        service.return_equipment(equipment.id) 
+
+
+@pytest.mark.django_db
+def test_equipment_not_found_error(service):
+    """Borrowing an unknown equipment id raises a not found error."""
+    with pytest.raises(EquipmentNotFoundError):
+        service.borrow_equipment(999999, "Carlos", "Spritz")
+
+
+def test_new_borrowing_after_return(service, equipment):
+    service.borrow_equipment(equipment.id, "Antoine", "Peschard")
+    service.return_equipment(equipment.id)
+    service.borrow_equipment(equipment.id, "Lukas", "Aled")
+    equipment.refresh_from_db()
+    assert equipment.is_available is False
+    assert equipment.borrower_first_name == "Lukas"
+    assert equipment.borrower_last_name == "Aled"
+    assert equipment.returned_at is None
