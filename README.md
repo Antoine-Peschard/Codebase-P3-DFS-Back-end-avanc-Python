@@ -33,6 +33,15 @@ API documentation is available at `/docs/` and the OpenAPI schema at `/schema/`.
 - `PUT /api/equipment/<id>/borrow/`
 - `PUT /api/equipment/<id>/return/`
 
+## Business rules
+
+- An equipment can only be borrowed if it is available.
+- An equipment that is already borrowed cannot be borrowed again (`EquipmentUnavailableError`).
+- An equipment that is already available cannot be returned (`EquipmentAlreadyAvailableError`).
+- When an equipment is borrowed, the borrower's first and last name and the borrowing date are stored, and the return date is reset.
+- When an equipment is returned, the borrower's name is cleared, the return date is stored, and the borrowing date is kept.
+- An unknown equipment id raises `EquipmentNotFoundError`.
+
 ## Project structure
 
 - `config/`: Django project configuration and root URLs
@@ -53,3 +62,4 @@ uv run ruff check .
 ## License
 
 This project is distributed under the MIT License.
+
