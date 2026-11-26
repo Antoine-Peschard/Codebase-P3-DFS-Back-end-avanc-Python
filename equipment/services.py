@@ -5,15 +5,15 @@ from .models import Equipment
 
 
 class EquipmentNotFoundError(Exception):
-    pass
+    """Raised when trying to borrow an equipment that does not exist."""
 
 
 class EquipmentUnavailableError(Exception):
-    pass
+    """Raised when trying to borrow an equipment that is already borrowed."""
 
 
 class EquipmentAlreadyAvailableError(Exception):
-    pass
+    """Raised when trying to return an equipment that is already returned."""
 
 
 class EquipmentService:
@@ -25,13 +25,16 @@ class EquipmentService:
 
     @transaction.atomic
     def borrow_equipment(self, equipment_id: int, first_name: str, last_name: str) -> Equipment:
+        """Borrow an available equipment for the given person.
+        
+        Stores the borrower's name and the borrowing date, and resets the return date."""
+
         equipment = self.find_equipment(equipment_id)
 
-        """Raise Unavailability error if no equipment is available"""
+        # An already borrowed equipment cannot be borrowed again
         if not equipment.is_available:
             raise EquipmentUnavailableError
         
-        """Updates the equipment's parameters when borrowed"""
         equipment.is_available = False
         equipment.borrower_first_name = first_name
         equipment.borrower_last_name = last_name
@@ -42,13 +45,16 @@ class EquipmentService:
 
     @transaction.atomic
     def return_equipment(self, equipment_id: int) -> Equipment:
+        """Return an unavailable equipment.
+        
+        Erases the borrower's name, keeps the borrowing date and saves the returning date."""
+
         equipment = self.find_equipment(equipment_id)
 
-        """Raise stock error if the equipment trying to be returned is already available"""
+        # An already returned equipment raises an error.
         if equipment.is_available:
             raise EquipmentAlreadyAvailableError
 
-        """Updates the equipment's parameters when returned"""
         equipment.is_available = True
         equipment.borrower_first_name = ""
         equipment.borrower_last_name = ""
